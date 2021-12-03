@@ -25,13 +25,14 @@ def get_data(args):
     paths = ['./words/builtin']
     words = {'adjectives': [], 'nouns': []}
     if not args.builtins:
-        paths.append('./words/extension')
-    
+        with open(f'./words/extension/passgen_modules.json') as f:
+            paths.extend((f'./words/extension/{path}' for path in json.load(f)))
+
     for dirpath in paths:
         for path in os.listdir(dirpath):
             with open(f'{dirpath}/{path}') as f:
                 words.update(json.load(f))
-    
+
     return words
 
 
@@ -44,7 +45,7 @@ def generate_indices(args, words):
         for _2 in range(args.adjectives or 2):
             adj_idx = secrets.randbelow(len_adj)
             indices.append((adj_idx, 'adjectives'))
-        
+
         noun_idx = secrets.randbelow(len_noun)
         indices.append((noun_idx, 'nouns'))
 
@@ -60,11 +61,11 @@ def get_passphrase(args, words, indices):
             raise Exception(f'Unknown location {location!r}')
         word = word_list[index].capitalize()
         result += word
-    
+
     if args.number:
         number = secrets.randbits(7)
         result += str(number)
-    
+
     return result
 
 

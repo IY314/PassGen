@@ -1,15 +1,32 @@
+"""Generate a passphrase based on specified options."""
+
+
 import argparse
+from dataclasses import dataclass
 import json
 import os
-import pyperclip
 import secrets
+import pyperclip
 
 
-def main():
-    args = generate_args()
-    words = get_data(args)
-    indices = generate_indices(args, words)
-    passphrase = get_passphrase(args, words, indices)
+@dataclass
+class _ArgClass:
+    adjectives: int
+    nouns: int
+    builtins: bool
+    number: bool
+    output: str
+
+
+def generate(adjectives=2, nouns=1, builtins=False,
+             number=False, output='clipboard'):
+    """Generates a passphrase based on the options"""
+    return _generate(_ArgClass(adjectives, nouns, builtins, number, output))
+
+
+def _main():
+    args = _generate_args()
+    passphrase = _generate(args)
     if args.output is None or args.output == 'clipboard':
         pyperclip.copy(passphrase)
     elif args.output == 'print':
@@ -18,7 +35,14 @@ def main():
         print(f'Unknown output option {args.output}')
 
 
-def generate_args():
+def _generate(args):
+    words = _get_data(args)
+    indices = _generate_indices(args, words)
+    passphrase = _get_passphrase(args, words, indices)
+    return passphrase
+
+
+def _generate_args():
     parser = argparse.ArgumentParser(prog='PassGen')
     parser.add_argument('--adjectives', '-a', type=int, help='The number of '
                         'adjectives (default 2)')
@@ -33,21 +57,21 @@ def generate_args():
     return parser.parse_args()
 
 
-def get_data(args):
+def _get_data(args):
     paths = ['./words/builtin']
     words = {'adjectives': [], 'nouns': []}
     if not args.builtins:
-        paths.append('./words/extension')
-
+        with open('./words/extension/passgen_modules.json', encoding='utf-8') as file:
+            paths.extend((f'./words/extension/{path}' for path in json.load(file)))
     for dirpath in paths:
         for path in os.listdir(dirpath):
-            with open(f'{dirpath}/{path}') as f:
-                words.update(json.load(f))
+            with open(f'{dirpath}/{path}', encoding='utf-8') as file:
+                words.update(json.load(file))
 
     return words
 
 
-def generate_indices(args, words):
+def _generate_indices(args, words):
     len_adj = len(words.get('adjectives', []))
     len_noun = len(words.get('nouns', []))
     indices = []
@@ -63,7 +87,7 @@ def generate_indices(args, words):
     return indices
 
 
-def get_passphrase(args, words, indices):
+def _get_passphrase(args, words, indices):
     result = ''
 
     for index, location in indices:
@@ -81,4 +105,4 @@ def get_passphrase(args, words, indices):
 
 
 if __name__ == '__main__':
-    main()
+    _main()

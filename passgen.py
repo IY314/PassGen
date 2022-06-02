@@ -10,21 +10,31 @@ import pyperclip
 
 
 @dataclass
-class _ArgClass:
-    adjectives: int
-    nouns: int
-    builtins: bool
-    number: bool
-    output: str
+class ArgClass:
+    """Arguments for passgen."""
+
+    adjectives: int = 2
+    nouns: int = 1
+    builtins: bool = False
+    number: bool = False
+    output: str = 'clipboard'
 
 
-def generate(adjectives=2, nouns=1, builtins=False,
-             number=False, output='clipboard'):
-    """Generates a passphrase based on the options"""
-    return _generate(_ArgClass(adjectives, nouns, builtins, number, output))
+def generate(args: ArgClass = None) -> str:
+    """Generate a passphrase based on specified options.
+
+    Args:
+        args (_ArgClass, optional): The options passed in. Defaults to None.
+
+    Returns:
+        str: The generated passphrase.
+    """
+    if args is None:
+        args = ArgClass()
+    return _generate(args)
 
 
-def _main():
+def _main() -> None:
     args = _generate_args()
     passphrase = _generate(args)
     if args.output is None or args.output == 'clipboard':
@@ -35,14 +45,14 @@ def _main():
         print(f'Unknown output option {args.output}')
 
 
-def _generate(args):
+def _generate(args: ArgClass) -> str:
     words = _get_data(args)
     indices = _generate_indices(args, words)
     passphrase = _get_passphrase(args, words, indices)
     return passphrase
 
 
-def _generate_args():
+def _generate_args() -> ArgClass:
     parser = argparse.ArgumentParser(prog='PassGen')
     parser.add_argument('--adjectives', '-a', type=int, help='The number of '
                         'adjectives (default 2)')
@@ -57,12 +67,15 @@ def _generate_args():
     return parser.parse_args()
 
 
-def _get_data(args):
+def _get_data(args: ArgClass) -> dict[str, list[str]]:
     paths = ['./words/builtin']
     words = {'adjectives': [], 'nouns': []}
     if not args.builtins:
-        with open('./words/extension/passgen_modules.json', encoding='utf-8') as file:
-            paths.extend((f'./words/extension/{path}' for path in json.load(file)))
+        with open('./words/extension/passgen_modules.json',
+                  encoding='utf-8') as file:
+            paths.extend((f'./words/extension/{path}'
+                         for path in json.load(file)))
+
     for dirpath in paths:
         for path in os.listdir(dirpath):
             with open(f'{dirpath}/{path}', encoding='utf-8') as file:
@@ -71,7 +84,9 @@ def _get_data(args):
     return words
 
 
-def _generate_indices(args, words):
+def _generate_indices(args: ArgClass,
+                      words: dict[str, list[str]]
+                      ) -> list[tuple[int, str]]:
     len_adj = len(words.get('adjectives', []))
     len_noun = len(words.get('nouns', []))
     indices = []
@@ -87,7 +102,10 @@ def _generate_indices(args, words):
     return indices
 
 
-def _get_passphrase(args, words, indices):
+def _get_passphrase(args: ArgClass,
+                    words: dict[str, list[str]],
+                    indices: list[tuple[int, str]]
+                    ) -> str:
     result = ''
 
     for index, location in indices:

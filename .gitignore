@@ -3,3 +3,4 @@ extension
 venv
 __pycache__
 *.swp
+.vscode
